@@ -19,24 +19,23 @@ camera = cv2.VideoCapture(0)
 def grepObject(t0, t1):
     global pts, direction, dX, dY, noContoursFoundAccu, contoursNow
 
-    #grey1 = cv2.cvtColor(t0, cv2.COLOR_BGR2GRAY)
-    #grey2 = cv2.cvtColor(t1, cv2.COLOR_BGR2GRAY)
     hsv1 = cv2.cvtColor(t0, cv2.COLOR_BGR2LAB)
     hsv2 = cv2.cvtColor(t1, cv2.COLOR_BGR2LAB)
     _, grey1, _  = cv2.split(hsv1)
     _, grey2, _ = cv2.split(hsv2)
 
-    #blur1 = cv2.GaussianBlur(grey1,(13,13),0)
-    #blur2 = cv2.GaussianBlur(grey2,(13,13),0)
-
     d = cv2.absdiff(grey1, grey2)
+    #cv2.imshow("Grey", d)
 
-    ret, mask = cv2.threshold( d, 10, 255, cv2.THRESH_BINARY )
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
+    d = cv2.GaussianBlur(d,(13,13),0)
+
+    ret, mask = cv2.threshold( d, 5, 255, cv2.THRESH_BINARY )
+    mask = cv2.erode(mask, None, iterations=4)
+    mask = cv2.dilate(mask, None, iterations=8)
+    #cv2.imshow("Mask", mask)
+
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)[-2]
-
     center = None
     areas = [cv2.contourArea(c) for c in cnts]
 
@@ -48,7 +47,7 @@ def grepObject(t0, t1):
         cnt=cnts[max_index]
         x,y,w,h = cv2.boundingRect(cnt)
         #print("area={}".format(areas[max_index]))  
-        if(areas[max_index]>3000 and areas[max_index]<15000):
+        if(areas[max_index]>3000):
             cv2.rectangle(t1,(x,y),(x+w,y+int(w*1.5)), (0,255,0),2)
             M = cv2.moments(cnt)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
@@ -87,7 +86,7 @@ def grepObject(t0, t1):
                     direction = dirX if dirX != "" else dirY
 
 
-        thickness = int(np.sqrt(trackLength / float(i + 1)) * 3)
+        thickness = int(np.sqrt(trackLength/(1/(float(i + 1)))) * 1.2)
         #thickness = int( (trackLength / int( (i + 1))^3)**(1/2) )
         cv2.line(t1, pts[i - 1], pts[i], (0, 0, 255), thickness)
 
